@@ -55,6 +55,34 @@ app.use(bodyParser.json());
 
 
 
+// Signup route
+// Signup route
+app.post('/signup', async(req, res) => {
+  const { username, password } = req.body;
+
+  // Check if the username already exists
+  User.findOne({ username })
+    .then(existingUser => {
+      if (existingUser) {
+        console.log("User Already Exists");
+        return res.status(409).json({ message: 'Username already exists' });
+      }
+
+      // Hash the password
+      bcrypt.hash(password, 10)
+        .then(hashedPassword => {
+          // Create a new user
+          const user = new User({ username, password: hashedPassword });
+
+         user.save()
+            .then(() => res.status(201).json({ message: 'User created successfully' }))
+            
+            .catch(err => res.status(500).json({ error: err }));
+        })
+        .catch(err => res.status(500).json({ error: err }));
+    })
+    .catch(err => res.status(500).json({ error: err }));
+});
 
 // Signup route
 app.post('/signup', async(req, res) => {
@@ -85,33 +113,36 @@ app.post('/signup', async(req, res) => {
 });
 
 // Login route
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-  
-    // Find the user by username
-    User.findOne({ username })
-      .then(user => {
-        if (!user) {
-          return res.status(401).json({ message: 'Authentication failed' });
-        }
-  
-        // Compare the password
-        bcrypt.compare(password, user.password)
-          .then(isMatch => {
-            if (!isMatch) {
-              return res.status(401).json({ message: 'Authentication failed' });
-            }
-            
-            // Create and sign a JWT token
-            const token = jwt.sign({ username: user.username }, secretKey, { expiresIn: '1h' });
-  
-            res.json({ token }); // Send the token as the response
-            console.log("Received token: ",token);
-          })
+app.post('/login', async(req, res) => {
+  const { username, password } = req.body;
+
+  // Find the user by username
+  await User.findOne({ username })
+    .then(user => {
+      if (!user) {
+        return res.status(401).json({ message: 'Authentication failed' });
+      }
+
+      // Compare the password
+      bcrypt.compare(password, user.password)
+        .then(isMatch => {
+          if (!isMatch) {
+            return res.status(401).json({ message: 'Authentication failed' });
+          }
           
-          .catch(err => res.status(500).json({ error: err }));
-      })
-      .catch(err => res.status(500).json({ error: err }));
+          // Create and sign a JWT token
+          const token = jwt.sign({ username: user.username }, secretKey, { expiresIn: '1h' });
+
+          res.json({ token }); // Send the token as the response
+          console.log("Received token: ",token);
+        })
+        
+        .catch(err => res.status(500).json({ error: err }));
+    })
+    .catch(err => res.status(500).json({ error: err }));
+
+          
+     
   });
 
 // Root endpoint
