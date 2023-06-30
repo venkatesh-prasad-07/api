@@ -55,8 +55,9 @@ app.use(bodyParser.json());
 
 
 
+
 // Signup route
-app.post('/signup', (req, res) => {
+app.post('/signup', async(req, res) => {
   const { username, password } = req.body;
 
   // Check if the username already exists
@@ -73,7 +74,7 @@ app.post('/signup', (req, res) => {
           // Create a new user
           const user = new User({ username, password: hashedPassword });
 
-          user.save()
+         user.save()
             .then(() => res.status(201).json({ message: 'User created successfully' }))
             
             .catch(err => res.status(500).json({ error: err }));
@@ -110,8 +111,8 @@ app.post('/login', (req, res) => {
           
           .catch(err => res.status(500).json({ error: err }));
       })
-      .catch(err => res.status(500).json({ error: err }));
-  });
+      .catch(err => res.status(500).json({ error: err }));
+  });
 
 // Root endpoint
 
