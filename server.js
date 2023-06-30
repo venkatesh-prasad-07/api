@@ -10,24 +10,6 @@ const port = process.env.PORT || 3000;
 const secretKey = process.env.SECRET_KEY || 'your-secret-key';
 
 
-app.use(express.json({ extended: false }));
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-app.use(express.json({ limit: "50mb" }));
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin,X-Requested-With,Content-Type,Accept,Authorization"
-  );
-  if (req.method == "OPTIONS") {
-    res.header("Access-Control-Allow-Methods", "PUT,POST,PATCH,DELETE,GET");
-    return res.status(200).json({});
-  }
-  next();
-});
-
-
 const connectDB = async () => {
     try {
       await mongoose.connect(process.env.MONGODB_URI);
@@ -102,7 +84,7 @@ app.post('/signup', async(req, res) => {
           // Create a new user
           const user = new User({ username, password: hashedPassword });
 
-         user.save()
+          user.save()
             .then(() => res.status(201).json({ message: 'User created successfully' }))
             
             .catch(err => res.status(500).json({ error: err }));
@@ -114,37 +96,33 @@ app.post('/signup', async(req, res) => {
 
 // Login route
 app.post('/login', async(req, res) => {
-  const { username, password } = req.body;
-
-  // Find the user by username
-  await User.findOne({ username })
-    .then(user => {
-      if (!user) {
-        return res.status(401).json({ message: 'Authentication failed' });
-      }
-
-      // Compare the password
-      bcrypt.compare(password, user.password)
-        .then(isMatch => {
-          if (!isMatch) {
-            return res.status(401).json({ message: 'Authentication failed' });
-          }
+    const { username, password } = req.body;
+  
+    // Find the user by username
+   await User.findOne({ username })
+      .then(user => {
+        if (!user) {
+          return res.status(401).json({ message: 'Authentication failed' });
+        }
+  
+        // Compare the password
+        bcrypt.compare(password, user.password)
+          .then(isMatch => {
+            if (!isMatch) {
+              return res.status(401).json({ message: 'Authentication failed' });
+            }
+            
+            // Create and sign a JWT token
+            const token = jwt.sign({ username: user.username }, secretKey, { expiresIn: '1h' });
+  
+            res.json({ token }); // Send the token as the response
+            console.log("Received token: ",token);
+          })
           
-          // Create and sign a JWT token
-          const token = jwt.sign({ username: user.username }, secretKey, { expiresIn: '1h' });
-
-          res.json({ token }); // Send the token as the response
-          console.log("Received token: ",token);
-        })
-        
-        .catch(err => res.status(500).json({ error: err }));
-    })
-    .catch(err => res.status(500).json({ error: err }));
-
-          
-     
+          .catch(err => res.status(500).json({ error: err }));
+      })
+      .catch(err => res.status(500).json({ error: err }));
   });
-
 // Root endpoint
 
 
